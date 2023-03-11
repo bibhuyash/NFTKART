@@ -1,5 +1,5 @@
 //SPDX-Licence-Identifier : MIT
- pragma solidity ^0.8.14;
+pragma solidity ^0.8.14;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -30,7 +30,7 @@ contract NFTMarket is ReentrancyGuard {
     mapping(uint256 => MarketItem) private _idToMarketItem;
 
     event MarketItemCreated(
-         uint256 indexed itemId,
+        uint256 indexed itemId,
         address indexed nftContract,
         uint256 indexed tokenId,
         address payable seller,
@@ -39,8 +39,40 @@ contract NFTMarket is ReentrancyGuard {
         bool sold
     );
 
-    function getListingPrice() public view returns(uint256) {
+    function getListingPrice() public view returns (uint256) {
         return listingPrice;
     }
 
+    function createMarketItem(
+        address nftContract,
+        uint256 tokenId,
+        uint256 price
+    ) public payable nonReentrant {
+        require(price > 0, "Price must be atleast 1 wei");
+        require(
+            msg.value == listingPrice,
+            "Price must be equal to listing price"
+        );
+        _itemId.increment();
+        uint256 itemId = _itemId.current();
+        _idToMarketItem[itemId] = MarketItem(
+            itemId,
+            nftContract,
+            tokenId,
+            payable(msg.sender),
+            payable(address(0)),
+            price,
+            false
+        );
+        IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
+        emit MarketItemCreated(
+            itemId,
+            nftContract,
+            tokenId,
+            payable(msg.sender),
+            payable(address(0)),
+            price,
+            false
+        );
+    }
 }
