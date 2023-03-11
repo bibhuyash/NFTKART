@@ -76,15 +76,39 @@ contract NFTMarket is ReentrancyGuard {
         );
     }
 
-    function createMarketSale(address nftContract, uint256 itemId) public payable nonReentrant {
+    function createMarketSale(
+        address nftContract,
+        uint256 itemId
+    ) public payable nonReentrant {
         uint256 price = _idToMarketItem[itemId].price;
         uint256 tokenId = _idToMarketItem[itemId].tokenId;
-        require(msg.value == price, "plese submit the asking price in order to complete the purchase");
+        require(
+            msg.value == price,
+            "plese submit the asking price in order to complete the purchase"
+        );
         _idToMarketItem[itemId].seller.transfer(msg.value);
         IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId);
         _idToMarketItem[itemId].owner = payable(msg.sender);
         _idToMarketItem[itemId].sold = true;
         _itemSold.increment();
         payable(owner).transfer(listingPrice);
+    }
+
+    function fetchMarketItem() public view returns (MarketItem[] memory) {
+        uint itemCount = _itemId.current();
+        uint unsoldItemCount = _itemId.current() - _itemSold.current();
+        uint CurrentIndex = 0;
+
+        MarketItem[] memory items = new MarketItem[](unsoldItemCount);
+
+        for (uint i = 0; i < itemCount; i++) {
+            if(_idToMarketItem[i+1].owner == address(0)) {
+                uint currentId = _idToMarketItem[i+1].itemId;
+                MarketItem storage currentItem = _idToMarketItem[currentId];
+                items[CurrentIndex] = currentItem;
+                CurrentIndex++;
+            }
+        }
+        return items;
     }
 }
