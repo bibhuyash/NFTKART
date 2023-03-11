@@ -75,4 +75,16 @@ contract NFTMarket is ReentrancyGuard {
             false
         );
     }
+
+    function createMarketSale(address nftContract, uint256 itemId) public payable nonReentrant {
+        uint256 price = _idToMarketItem[itemId].price;
+        uint256 tokenId = _idToMarketItem[itemId].tokenId;
+        require(msg.value == price, "plese submit the asking price in order to complete the purchase");
+        _idToMarketItem[itemId].seller.transfer(msg.value);
+        IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId);
+        _idToMarketItem[itemId].owner = payable(msg.sender);
+        _idToMarketItem[itemId].sold = true;
+        _itemSold.increment();
+        payable(owner).transfer(listingPrice);
+    }
 }
