@@ -24,7 +24,7 @@ export default function Home() {
     const items = await Promise.all(data.map(async i => {
       const tokenUri = await tokenContract.tokenURI(i.tokenId);
       const meta = await axios.get(tokenUri);
-      const price = ethers.utils.formatUnits(i.price.toSting(), 'ether');
+      const price = ethers.utils.formatUnits(i.price.toString(), 'ether');
       let item = {
         price,
         tokenId: i.tokenId.toNumber(),
@@ -40,7 +40,21 @@ export default function Home() {
     setLoadingState('loaded')
   }
 
-  if(loadingState === 'loaded' && !nfts.length) return(<h1 className='px-20 py-10 text-3xl'>No items in NFTKART</h1>);
+  async function buyNft(nft) {
+    const web3modal = new Web3Modal();
+    const connection = await web3modal.connect()
+    const provider = new ethers.providers.Web3Provider(connection);
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(nftmarketaddress, Market.abi, signer)
+    const price = ethers.utils.parseUnits(nft.price.toString(), 'ether')
+    const transaction = await contract.createMarketSale(nftaddress, nft.tokenId, { value: price })
+    await transaction.wait();
+    loadNFTs();
+  }
+
+  if (loadingState === 'loaded' && !nfts.length) return (
+    <h1 className='px-20 py-10 text-3xl'>No items in NFTKART</h1>
+  );
 
   return (
     <div>
